@@ -449,38 +449,32 @@ dmrs_alps      <- get_sig_dmrs("ALPS_vs_Controls")
 dmrs_alps_like <- get_sig_dmrs("ALPS_Like_vs_Controls")
 
 # 6. GRAPHICAL OUTPUTS
-# A. UpSet Plot (Safe rendering execution checked)
-upset_input_list <- list(ALPS_vs_Controls = dmrs_alps, ALPS_Like_vs_Controls = dmrs_alps_like)
+# A. UpSet Plot 
+upset_input_list <- list(
+  ALPS = unique(dmrs_alps),
+  ALPS_like = unique(dmrs_alps_like)
+)
 
-# Generate and save the UpSet plot
-if (length(dmrs_alps) > 0 || length(dmrs_alps_like) > 0) {
+upset_data <- UpSetR::fromList(upset_input_list)
 
-  grDevices::png(
-    filename = file.path(figures_dir, "dmrs_upset_plot.png"),
-    width = 3300,
-    height = 2100,
-    res = 300,
-    bg = "white"
-  )
+UpSetR::upset(
+  upset_data,
+  sets = names(upset_input_list),
+  keep.order = TRUE,
+  order.by = "freq"
+)
 
-  tryCatch(
-    {
-      UpSetR::upset(
-        UpSetR::fromList(upset_input_list),
-        order.by = "freq",
-        main.bar.color = "darkcyan",
-        sets.bar.color = "coral",
-        text.scale = 1.3
-      )
-    },
-    finally = {
-      grDevices::dev.off()
-    }
-  )
+dev.copy(
+  png,
+  filename = file.path(figures_dir, "dmrs_upset_plot.png"),
+  width = 3300,
+  height = 2100,
+  res = 300
+)
 
-} else {
-  message("UpSet plot skipped: no significant DMRs available.")
-}
+dev.off()
+
+message("UpSet plot saved to: ", normalizePath(figures_dir))
 
 # B. Volcano Plot for the ALPS vs Controls Comparison
 # Purpose: Build a publication-ready Volcano Plot resolving overplotting artifacts,
@@ -896,6 +890,7 @@ custom_track_colors <- list(
 )
 
 # 4. GENERATE AND EXPORT THE ANNOTATED HEATMAP
+# 1. Display the heatmap in RStudio Plots
 heatmap_result <- pheatmap::pheatmap(
   heatmap_matrix,
   scale = "row",
@@ -906,26 +901,78 @@ heatmap_result <- pheatmap::pheatmap(
   annotation_colors = custom_track_colors,
   show_rownames = TRUE,
   show_colnames = TRUE,
-  fontsize = 7,
-  fontsize_row = 6,
-  fontsize_col = 6,
+  fontsize = 8,
+  fontsize_row = 8,
+  fontsize_col = 8,
   angle_col = 45,
   border_color = "grey",
-  main = "Hierarchical Clustering & Epigenetic Signatures of Significant DMRs",
-  treeheight_row = 10,
-  treeheight_col = 12,
-  cellwidth = 10,
-  cellheight = 12,
-  filename = file.path(
-    figures_dir,
-    "hierarchical_clustering_significant_dmrs.png"
-  ),
-  width = 12,
-  height = 4
+  cellwidth = NA,
+  cellheight = NA,
+  silent = TRUE
 )
 
 grid::grid.newpage()
+grid::pushViewport(grid::viewport(
+  layout = grid::grid.layout(
+    nrow = 2,
+    heights = grid::unit(c(0.6, 9.4), "null")
+  )
+))
+
+grid::pushViewport(grid::viewport(layout.pos.row = 1))
+grid::grid.text(
+  "Hierarchical Clustering & Epigenetic Signatures of Significant DMRs",
+  gp = grid::gpar(fontsize = 11, fontface = "bold")
+)
+grid::popViewport()
+
+grid::pushViewport(grid::viewport(layout.pos.row = 2))
 grid::grid.draw(heatmap_result$gtable)
+grid::popViewport(2)
+
+# Save the complete heatmap, including the custom title
+output_file <- file.path(
+  figures_dir,
+  "hierarchical_clustering_significant_dmrs.png"
+)
+
+grDevices::png(
+  filename = output_file,
+  width = 4200,
+  height = 2400,
+  res = 300,
+  bg = "white"
+)
+
+grid::grid.newpage()
+
+grid::pushViewport(grid::viewport(
+  layout = grid::grid.layout(
+    nrow = 2,
+    heights = grid::unit(c(0.8, 9.2), "null")
+  )
+))
+
+# Draw title
+grid::pushViewport(grid::viewport(layout.pos.row = 1))
+
+grid::grid.text(
+  "Hierarchical Clustering & Epigenetic Signatures of Significant DMRs",
+  gp = grid::gpar(fontsize = 16, fontface = "bold")
+)
+
+grid::popViewport()
+
+# Draw heatmap
+grid::pushViewport(grid::viewport(layout.pos.row = 2))
+
+grid::grid.draw(heatmap_result$gtable)
+
+grid::popViewport(2)
+
+grDevices::dev.off()
+
+message("Heatmap saved to: ", output_file)
 
 # ==============================================================================
 # SECTION 4.6: GENE ONTOLOGY & FUNCTIONAL ENRICHMENT ANALYSIS
