@@ -4,7 +4,7 @@ Final Master's Degree Project at VIU
 ## Project structure
 
 ```text
-09MBIF_TFT/
+09MBIF_TFT-VIU/
 │
 ├── .gitignore
 │   # Specifies files and directories that should not be tracked by Git.
